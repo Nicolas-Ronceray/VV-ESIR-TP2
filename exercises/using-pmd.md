@@ -4,6 +4,7 @@ Pick a Java project from Github (see the [instructions](../sujet.md) for suggest
 
 ## Answer
 In the Apache Collections map, PMD tells us what we think is a false positive in the method isEqualKey in the AbstracReferenceMap.java.
+
 ```java
 return key1 == key2 || key1.equals(key2);
 ```
@@ -18,5 +19,7 @@ return true;
 ```
 
 We think it is a true positive because it doesn't change the result and for us it doesn’t make the code more readable. We would change the code as the following : 
-return (compare(key, other.getKey()) && compare(value, other.getValue());
 
+```java
+return (compare(key, other.getKey()) && compare(value, other.getValue());
+```
