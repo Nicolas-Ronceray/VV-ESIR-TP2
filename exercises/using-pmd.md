@@ -12,10 +12,9 @@ PMD tells us “Use equals() to compare object references.” but we can see tha
 
 Then in AbstractBitwiseTrie.java, PMD tells us that at line 204 “Avoid unnecessary if..then..else statements when returning booleans” for the following code : 
 ```java
-            if (compare(key, other.getKey())
-                    && compare(value, other.getValue())) {
-                return true;
-            }
+if (compare(key, other.getKey()) && compare(value, other.getValue())) {
+return true;
+}
 ```
 
 We think it is a true positive because it doesn't change the result and for us it doesn’t make the code more readable. We would change the code as the following : 
