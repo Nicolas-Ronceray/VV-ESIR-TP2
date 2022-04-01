@@ -9,6 +9,7 @@ If TCC=LCC=1, it means that all the methods are connected. If the value of TCC=L
 class example :
 
 public class Word {
+
     private String word;
     
     public Word(String w) {
