@@ -36,7 +36,7 @@ public class Main {
             result.ifSuccessful(unit -> unit.accept(printer, null));
             return SourceRoot.Callback.Result.DONT_SAVE;
         });
-        CSVWriter writer = new CSVWriter(new FileWriter(System.getProperty("user.dir")+"//output.csv"));
+        CSVWriter writer = new CSVWriter(new FileWriter(System.getProperty("user.dir")+"//output2.csv"));
         writer.writeAll(printer.getDataForCSV());
         writer.flush();
         //System.out.println();

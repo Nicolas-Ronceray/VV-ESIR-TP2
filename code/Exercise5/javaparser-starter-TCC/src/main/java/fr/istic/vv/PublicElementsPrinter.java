@@ -18,7 +18,7 @@ import com.github.javaparser.ast.visitor.VoidVisitorWithDefaults;
 // This class visits a compilation unit and
 // prints all public enum, classes or interfaces along with their public methods
 public class PublicElementsPrinter extends VoidVisitorWithDefaults<Void> {
-	private int nbMaxConnections = 0;
+	private double nbMaxConnections = 0.0;
 	private Set<String> setFieldsName;
 	private Map<String, Set<String>> mapMethodsVariables;
 	private String[] dataRow = new String[3];
@@ -27,10 +27,8 @@ public class PublicElementsPrinter extends VoidVisitorWithDefaults<Void> {
 	
 	@Override
 	public void visit(CompilationUnit unit, Void arg) {
-
 		for (TypeDeclaration<?> type : unit.getTypes()) {
-			dataRow[0]=type.getFullyQualifiedName().orElse("[Anonymous]");
-			//System.out.println("In Package " + type.getFullyQualifiedName().orElse("[Anonymous]"));
+			dataRow[0]=unit.getPackageDeclaration().get().getNameAsString();
 			type.accept(this, null);
 			dataForCSV.add(dataRow);
 			dataRow = new String[3];
@@ -87,7 +85,12 @@ public class PublicElementsPrinter extends VoidVisitorWithDefaults<Void> {
 		}
 
 		nbMaxConnections = (nbMaxConnections * (nbMaxConnections - 1)) / 2;
-		dataRow[2]= directConnections() + "/" + nbMaxConnections;
+		
+		double tcc = 0.0; 
+		if(nbMaxConnections!=0) {
+			tcc=(directConnections()/nbMaxConnections);
+		}
+		dataRow[2]= ""+tcc;
 		//System.out.println("    TCC = " + directConnections() + "/" + nbMaxConnections);
 		nbMaxConnections = 0;
 		// Printing nested types in the top level
@@ -135,8 +138,8 @@ public class PublicElementsPrinter extends VoidVisitorWithDefaults<Void> {
 	 * 
 	 * @return an int of the number of comparison
 	 */
-	public int directConnections() {
-		int res = 0;
+	public double directConnections() {
+		double res = 0.0;
 		// Index of the current method variables
 		int primaryIndex = 0;
 
