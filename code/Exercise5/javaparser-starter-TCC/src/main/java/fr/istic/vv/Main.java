@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import java.io.FileWriter;
+import com.opencsv.CSVWriter; //Dependency added in pom.xml
+
 public class Main {
 
     public static void main(String[] args) throws IOException {
@@ -33,6 +36,10 @@ public class Main {
             result.ifSuccessful(unit -> unit.accept(printer, null));
             return SourceRoot.Callback.Result.DONT_SAVE;
         });
+        CSVWriter writer = new CSVWriter(new FileWriter(System.getProperty("user.dir")+"//output.csv"));
+        writer.writeAll(printer.getDataForCSV());
+        writer.flush();
+        //System.out.println();
     }
 
 

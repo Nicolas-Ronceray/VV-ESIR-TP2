@@ -21,20 +21,75 @@ public class PublicElementsPrinter extends VoidVisitorWithDefaults<Void> {
 	private int nbMaxConnections = 0;
 	private Set<String> setFieldsName;
 	private Map<String, Set<String>> mapMethodsVariables;
-
+	private String[] dataRow = new String[3];
+	
+	private List<String[]> dataForCSV = new ArrayList<String[]>();
+	
 	@Override
 	public void visit(CompilationUnit unit, Void arg) {
+
 		for (TypeDeclaration<?> type : unit.getTypes()) {
+			dataRow[0]=type.getFullyQualifiedName().orElse("[Anonymous]");
+			//System.out.println("In Package " + type.getFullyQualifiedName().orElse("[Anonymous]"));
 			type.accept(this, null);
+			dataForCSV.add(dataRow);
+			dataRow = new String[3];
 		}
 	}
 
 	public void visitTypeDeclaration(TypeDeclaration<?> declaration, Void arg) {
 		if (!declaration.isPublic())
 			return;
+		dataRow[1]=declaration.getNameAsString();
+		//System.out.println("  In class :" + declaration.getNameAsString());
+
 		for (MethodDeclaration method : declaration.getMethods()) {
+			//get All variables used in a method
+			List<NameExpr> listNameExpr = method.findAll(NameExpr.class);
+			ListIterator<NameExpr> itNameExpr = listNameExpr.listIterator();
+			
+			//get All accessed from scope in method
+			List<FieldAccessExpr> listFieldAccessExpr = method.findAll(FieldAccessExpr.class);
+			ListIterator<FieldAccessExpr> itFieldAccess = listFieldAccessExpr.listIterator();
+
+			List<String> listNameExprString = new ArrayList<String>();
+
+			// variables used in method
+			while (itNameExpr.hasNext()) {
+				NameExpr current = itNameExpr.next();
+				listNameExprString.add(current.getNameAsString());
+			}
+
+			// variable accessed from scope in method
+			while (itFieldAccess.hasNext()) {
+				FieldAccessExpr current = itFieldAccess.next();
+				listNameExprString.add(current.getNameAsString());
+			}
+			// Keep only attributes from the class
+			listNameExprString.retainAll(setFieldsName);
+			Set<String> varSet = new HashSet<String>(listNameExprString);
+			// Add a set of variables from a method that is the key
+			mapMethodsVariables.put(method.getNameAsString(), varSet);
+			// Count the number of methods
+			nbMaxConnections++;
 			method.accept(this, arg);
+			// System.out.println("nbco "+nbMaxConnections);
+
+			List<FieldDeclaration> listFields = declaration.getFields();
+			ListIterator<FieldDeclaration> it = listFields.listIterator();
+
+			// Add all the names of the variable in a list in the current class
+			while (it.hasNext()) {
+				FieldDeclaration current = it.next();
+				setFieldsName.add(current.getVariable(0).getNameAsString());
+			}
+
 		}
+
+		nbMaxConnections = (nbMaxConnections * (nbMaxConnections - 1)) / 2;
+		dataRow[2]= directConnections() + "/" + nbMaxConnections;
+		//System.out.println("    TCC = " + directConnections() + "/" + nbMaxConnections);
+		nbMaxConnections = 0;
 		// Printing nested types in the top level
 		for (BodyDeclaration<?> member : declaration.getMembers()) {
 			if (member instanceof TypeDeclaration)
@@ -44,27 +99,24 @@ public class PublicElementsPrinter extends VoidVisitorWithDefaults<Void> {
 
 	@Override
 	public void visit(ClassOrInterfaceDeclaration declaration, Void arg) {
-		System.out.println("\n" + declaration.getFullyQualifiedName().orElse("[Anonymous]"));
-		nbMaxConnections = 0;
+		if (!declaration.isPublic())
+			return;
+		setFieldsName = new HashSet<String>();
+		mapMethodsVariables = new HashMap<String, Set<String>>();
+
 		List<FieldDeclaration> listFields = declaration.getFields();
 		ListIterator<FieldDeclaration> it = listFields.listIterator();
 
 		setFieldsName = new HashSet<String>();
 		mapMethodsVariables = new HashMap<String, Set<String>>();
-		boolean isAbstract = declaration.isAbstract();
 
 		// Add all the names of the variable in a list in the current class
-		if (!isAbstract) {
-			while (it.hasNext()) {
-				FieldDeclaration current = it.next();
-				setFieldsName.add(current.getVariable(0).getNameAsString());
-			}
+		while (it.hasNext()) {
+			FieldDeclaration current = it.next();
+			setFieldsName.add(current.getVariable(0).getNameAsString());
 		}
-		//D:\Dossier_Esir_Travail\ESIR\ESIR_2\MDI\commons-collections-master\srcSystem.out.println("Fields in class : " + setFieldsName);
-
 		visitTypeDeclaration(declaration, arg);
-		nbMaxConnections = (nbMaxConnections * (nbMaxConnections - 1)) / 2;
-		System.out.println("TCC = " + directConnections() + "/" + nbMaxConnections);
+
 	}
 
 	@Override
@@ -76,33 +128,6 @@ public class PublicElementsPrinter extends VoidVisitorWithDefaults<Void> {
 	public void visit(MethodDeclaration declaration, Void arg) {
 		if (!declaration.isPublic())
 			return;
-
-		List<NameExpr> listNameExpr = declaration.findAll(NameExpr.class);
-		ListIterator<NameExpr> itNameExpr = listNameExpr.listIterator();
-
-		List<FieldAccessExpr> listFieldAccessExpr = declaration.findAll(FieldAccessExpr.class);
-		ListIterator<FieldAccessExpr> itFieldAccess = listFieldAccessExpr.listIterator();
-
-		List<String> listNameExprString = new ArrayList<String>();
-
-		// variables used in method
-		while (itNameExpr.hasNext()) {
-			NameExpr current = itNameExpr.next();
-			listNameExprString.add(current.getNameAsString());
-		}
-
-		// variable accessed from scope in method
-		while (itFieldAccess.hasNext()) {
-			FieldAccessExpr current = itFieldAccess.next();
-			listNameExprString.add(current.getNameAsString());
-		}
-		// Keep only attributes from the class
-		listNameExprString.retainAll(setFieldsName);
-		Set<String> varSet = new HashSet<String>(listNameExprString);
-		// Add a set of variables from a method that is the key
-		mapMethodsVariables.put(declaration.getNameAsString(), varSet);
-		// Count the number of methods
-		nbMaxConnections++;
 	}
 
 	/**
@@ -135,5 +160,10 @@ public class PublicElementsPrinter extends VoidVisitorWithDefaults<Void> {
 		}
 		return res;
 	}
-
+	
+	public List<String[]> getDataForCSV(){
+		String[] header = {"Package", "Class Name", "TCC value" };
+		 dataForCSV.add(0,header);
+		 return dataForCSV;
+	}
 }
